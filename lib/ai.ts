@@ -106,12 +106,69 @@ async function analyzeWithGroq(apiKey: string, resumeText: string): Promise<Resu
 
 function buildAnalysisPrompt(resumeText: string) {
   const prompt = `
-You are an expert career analyst and recruiter with knowledge across multiple industries including technology, healthcare, pharmaceuticals, customer support, business, and general roles.
-Analyze the resume text below and respond with valid JSON only.
+You are an expert career analyst, recruiter, and ATS evaluator.
 
-Return this exact shape:
+You MUST analyze resumes across ANY domain using structured reasoning.
+
+-----------------------
+DOMAIN DETECTION RULES
+-----------------------
+Determine the domain using weighted signals:
+
+HIGH weight:
+- Education (degree, specialization)
+- Job titles
+- Certifications
+
+MEDIUM weight:
+- Tools and technologies
+- Industry keywords
+
+LOW weight:
+- Generic skills (communication, teamwork)
+
+IMPORTANT:
+- If education and experience strongly align with a non-tech field (e.g. BPharma, Nursing), you MUST classify it as that domain
+- DO NOT override domain based on a few tech keywords
+- If multiple domains exist, choose the dominant one based on consistency
+
+-----------------------
+STEP 1: Detect Domain
+-----------------------
+- Identify 1 primary domain
+- Provide a confidence score (0-100)
+- Suggest 2-3 realistic roles ONLY within that domain
+
+-----------------------
+STEP 2: Extract Structured Data
+-----------------------
+- skills
+- experience
+- education
+- tools
+- soft skills
+
+-----------------------
+STEP 3: Evaluate Role Fit
+-----------------------
+For each role:
+- role
+- score (0-100)
+- strengths
+- weaknesses
+- improvements
+
+SCORING RULES:
+- Evaluate relative to domain expectations
+- DO NOT penalize non-tech resumes for lack of coding skills
+- Be realistic and critical
+
+-----------------------
+OUTPUT FORMAT (STRICT JSON)
+-----------------------
 {
   "domain": "",
+  "domain_confidence": 0,
   "suggested_roles": [
     {
       "role": "",
@@ -131,13 +188,9 @@ Return this exact shape:
 }
 
 Rules:
-- First detect the domain from the resume context. Do not assume the resume is for a tech role.
-- Suggest 2 to 3 relevant roles only.
-- Score each role realistically from 0 to 100 for that domain.
-- Do not penalize non-tech resumes for lacking tech skills.
-- Extract domain-specific and general skills separately where possible, but return them together in "skills".
-- Keep arrays concise, specific, and deduplicated.
+- Return valid JSON only.
 - Do not wrap JSON in markdown.
+- Keep arrays concise, specific, and deduplicated.
 
 Resume:
 ${resumeText}
