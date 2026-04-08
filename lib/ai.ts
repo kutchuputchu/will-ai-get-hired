@@ -8,7 +8,7 @@ export async function analyzeResumeWithAI(resumeText: string): Promise<ResumeAna
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is missing.");
+    return buildMockAnalysis(resumeText);
   }
 
   const prompt = `
@@ -83,4 +83,61 @@ function safeJsonParse(raw: string) {
 
     return JSON.parse(match[0]);
   }
+}
+
+function buildMockAnalysis(resumeText: string): ResumeAnalysis {
+  const lowerText = resumeText.toLowerCase();
+  const knownSkills = [
+    "javascript",
+    "typescript",
+    "react",
+    "next.js",
+    "node.js",
+    "express",
+    "python",
+    "sql",
+    "postgresql",
+    "supabase",
+    "tailwind",
+    "docker",
+    "aws",
+    "git",
+    "rest api",
+    "graphql",
+    "html",
+    "css"
+  ];
+
+  const skills = knownSkills.filter((skill) => lowerText.includes(skill)).slice(0, 12);
+  const recommendedSkills = ["typescript", "react", "next.js", "node.js", "sql", "docker", "aws"];
+  const missingSkills = recommendedSkills.filter((skill) => !skills.includes(skill)).slice(0, 5);
+  const yearsOfExperience = detectExperienceYears(lowerText);
+  const experienceLevel =
+    yearsOfExperience >= 6 ? "Senior" : yearsOfExperience >= 2 ? "Mid-level" : "Junior";
+  const resumeScore = Math.min(
+    95,
+    45 +
+      skills.length * 4 +
+      (yearsOfExperience >= 2 ? 8 : 0) +
+      (lowerText.includes("project") ? 6 : 0) +
+      (lowerText.includes("achievement") || lowerText.includes("improved") ? 6 : 0)
+  );
+
+  return {
+    summary: `Demo analysis: detected ${skills.length || 1} likely skill areas and estimated ${experienceLevel.toLowerCase()} experience based on the resume text.`,
+    skills: skills.length ? skills : ["communication"],
+    experienceLevel,
+    missingSkills,
+    resumeScore
+  };
+}
+
+function detectExperienceYears(text: string) {
+  const match = text.match(/(\d+)\+?\s+years?/);
+
+  if (!match) {
+    return 0;
+  }
+
+  return Number.parseInt(match[1], 10) || 0;
 }
